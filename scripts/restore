@@ -15,12 +15,16 @@ sudo echo "deb https://deb.packager.io/gh/pkgr/gogs jessie pkgr" | sudo tee /etc
 sudo apt-get update
 sudo apt-get -y install gogs 
 
+# Get installation paths
+install_path=$(sudo yunohost app setting $app install_path)
+source_path=$(sudo yunohost app setting $app source_path)
+
 # Restore data
 repo_path=$(sudo yunohost app setting $app repopath)
 sudo cp -a $backup_dir/data/. $repo_path
 
 # Restore config
-sudo cp $backup_dir/conf/app.ini /opt/gogs/custom/conf/app.ini
+sudo cp $backup_dir/conf/app.ini $install_path/custom/conf/app.ini
 
 # Restore mysql dump
 db_pwd=$(sudo yunohost app setting $app mysqlpwd)

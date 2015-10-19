@@ -9,7 +9,7 @@ Type=simple
 User=gogs
 Group=gogs
 WorkingDirectory=/home/gogs
-ExecStart=/opt/gogs/gogs web
+ExecStart=yuno_workingdir/gogs web
 Restart=always
 Environment=USER=gogs HOME=/home/gogs
 

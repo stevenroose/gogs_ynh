@@ -17,12 +17,12 @@ TODO
  
 FOR DEVELOPPER : sources files (sources/gogs_src.tar.gz) is build with this command :
 ```
-mkdir -p /opt/gogs_src/src/github.com/gogits
-cd /opt/gogs_src/src/github.com/gogits
+mkdir -p /var/www/gogs_src/src/github.com/gogits
+cd /var/www/gogs_src/src/github.com/gogits
 git clone --depth=500 -b master https://github.com/gogits/gogs
 cd gogs
 git reset --hard v0.6.15    # adapt version
-GOPATH=/opt/gogs_src: go get -d ./...
-cd /opt
+GOPATH=/var/www/gogs_src: go get -d ./...
+cd /var/www
 tar czf gogs_src.tar.gz gogs_src
 ```

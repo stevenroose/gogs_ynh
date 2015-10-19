@@ -7,6 +7,10 @@ root_pwd=$(sudo cat /etc/yunohost/mysql)
 
 sudo service gogs stop
 
+# Get installation paths
+install_path=$(sudo yunohost app setting $app install_path)
+source_path=$(sudo yunohost app setting $app source_path)
+
 # Remove data
 repo_path=$(sudo yunohost app setting $app repopath)
 sudo rm -rf $repo_path
@@ -22,8 +26,8 @@ else
 fi
 
 # Remove app
-sudo rm -rf /opt/gogs
-sudo rm -rf /opt/gogs_src
+sudo rm -rf $install_path
+sudo rm -rf $source_path
 sudo rm -rf /etc/ini.d/gogs
 sudo rm -rf /etc/logrotate.d/gogs
 sudo service rsyslog restart
