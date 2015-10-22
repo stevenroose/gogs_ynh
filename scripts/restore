@@ -18,6 +18,15 @@ sudo apt-get -y install gogs
 # Get installation paths
 install_path=$(sudo yunohost app setting $app install_path)
 source_path=$(sudo yunohost app setting $app source_path)
+# Compatibility with older versions
+if [ "$install_path" = "" ] then
+	sudo yunohost app setting $app install_path -v /opt/gogs
+	install_path=/opt/gogs
+fi
+if [ "$source_path" = "" ] then
+	sudo yunohost app setting $app source_path -v /opt/gogs_src
+	source_path=/opt/gogs_src
+fi
 
 # Restore data
 repo_path=$(sudo yunohost app setting $app repopath)

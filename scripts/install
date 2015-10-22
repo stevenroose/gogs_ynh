@@ -86,9 +86,9 @@ sudo cp ../conf/logrotate /etc/logrotate.d/gogs
 sudo service rsyslog restart
 
 # Configure init script
-sudo sed -i "s@yuno_workingdir@$install_path@g" ../conf/sysvinit/gogs
 if [[ $(cat /etc/debian_version) = "7."* ]]
 then
+  sudo sed -i "s@yuno_workingdir@$install_path@g" ../conf/sysvinit/gogs
 	sudo cp ../conf/sysvinit/gogs /etc/init.d/
 	sudo chmod u+x /etc/init.d/gogs
 	sudo update-rc.d gogs defaults
