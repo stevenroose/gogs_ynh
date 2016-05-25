@@ -1,0 +1,133 @@
+#!/bin/bash
+
+set -e
+
+app=gogs
+
+# Retrieve arguments
+domain=$1
+path=$2
+admin=$3
+is_public=$4
+
+if [[ $(cat /etc/debian_version) = "7."* ]]
+then
+    echo "You need debian Jessie (8.x) to install gogs."
+    exit 1
+fi
+
+# Check domain/path availability
+sudo yunohost app checkurl $domain$path -a $app  \
+    || (echo "Path not available: $domain$path" && exit 1)
+
+# Check that admin user is an existing account
+sudo yunohost user list --json | grep -q "\"username\": \"$admin\"" \
+    || (echo "Error: the chosen admin user does not exist" && exit 1)
+
+# Generate random password
+db_pwd=$(openssl rand -hex 15)
+
+# Initialize database and store mysql password for upgrade
+sudo yunohost app initdb $app -p $db_pwd
+sudo yunohost app setting $app mysqlpwd -v $db_pwd
+
+# Generate random key
+key=$(openssl rand -hex 15)
+
+# store config in yunohost
+sudo yunohost app setting $app adminusername -v $admin
+sudo yunohost app setting $app is_public -v $is_public
+sudo yunohost app setting $app secret_key -v $key
+
+# Install golang package from jessie backport
+sudo echo "deb http://http.debian.net/debian jessie-backports main" | sudo tee /etc/apt/sources.list.d/debian-backport-tmp.list
+sudo apt-get update
+sudo apt-get -t jessie-backports -y install golang
+sudo rm -f /etc/apt/sources.list.d/debian-backport-tmp.list
+sudo apt-get update
+
+# Add users
+sudo addgroup gogs --system --quiet
+sudo adduser gogs --disabled-login --ingroup gogs --system --quiet --shell /bin/bash
+
+# install Gogs
+final_path=/opt/$app
+do_install 0 $final_path
+yunohost app setting $app version -v $(cat ../conf/VERSION)
+
+# repository path
+repo_path=/home/yunohost.app/$app
+sudo mkdir -p $repo_path
+sudo yunohost app setting $app repopath -v $repo_path
+
+# Create a link to static files
+sudo mkdir -p /etc/gogs/conf
+sudo mkdir -p /home/gogs/data/avatars
+sudo mkdir -p /var/log/gogs
+sudo rm -rf $final_path/log
+sudo rm -rf $final_path/custom
+sudo rm -rf $final_path/data
+sudo ln -fs /etc/gogs $final_path/custom
+sudo ln -fs /home/gogs/data $final_path/data
+sudo ln -fs /var/log/gogs $final_path/log
+
+# Configure logrotate
+sudo cp ../conf/logrotate /etc/logrotate.d/gogs
+sudo service rsyslog restart
+
+# Configure init script
+sudo cp ../conf/systemd/gogs.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable gogs.service
+
+# Set gogs user for gogs directory
+sudo chown gogs:gogs -R $final_path
+sudo chown -hR gogs:gogs $repo_path
+sudo chown -R gogs:gogs /var/log/gogs
+sudo chown -R gogs:gogs /home/gogs
+
+# Copy and edit app.ini
+mkdir -p $final_path/custom/conf
+sudo cp ../conf/app.ini $final_path/custom/conf
+sudo sed -i "s@yuno_repo@$repo_path@g" $final_path/custom/conf/app.ini
+if [ "$path" = "/" ]
+then
+    sudo sed -i "s@yuno_url@$domain@g" $final_path/custom/conf/app.ini
+else
+    sudo sed -i "s@yuno_url@$domain${path%/}@g" $final_path/custom/conf/app.ini
+fi
+sudo sed -i "s/yuno_dbpdw/$db_pwd/g" $final_path/custom/conf/app.ini
+sudo sed -i "s/yuno_dbuser/$app/g" $final_path/custom/conf/app.ini
+sudo sed -i "s/yuno_domain/$domain/g" $final_path/custom/conf/app.ini
+sudo sed -i "s/yuno_key/$key/g" $final_path/custom/conf/app.ini
+sudo chown gogs:gogs $final_path/custom/conf/app.ini
+
+# Add ldap config
+sudo service gogs restart # for building mysql table
+sleep 30
+sudo sed -i "s@yuno_admin@$admin@g" ../conf/login_source.sql
+mysql -u root -p$(sudo cat /etc/yunohost/mysql)  < ../conf/login_source.sql
+
+# Add Gogs to YunoHost's monitored services
+sudo yunohost service add gogs --log /var/log/gogs.log
+
+# Modify Nginx configuration file and copy it to Nginx conf directory
+sed -i "s@PATHTOCHANGE@${path%/}@g" ../conf/nginx.conf
+if [ "$path" = "/" ]
+then
+    sed -i "s@COMMENT_IF_ROOT@#@g" ../conf/nginx.conf
+else
+    sed -i "s@COMMENT_IF_ROOT@@g" ../conf/nginx.conf
+fi
+sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
+
+if [ "$is_public" = "Yes" ]
+then
+    sudo yunohost app setting gogs unprotected_uris -v "/"
+fi
+
+# Reload Nginx and regenerate SSOwat conf
+sudo yunohost app ssowatconf
+sudo service nginx reload
+
+sudo service gogs restart

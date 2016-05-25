@@ -1,0 +1,39 @@
+#!/bin/bash
+
+VERSION=$(cat ../conf/VERSION)
+TARBALL=$(cat ../conf/TARBALL)
+
+CURRENT_VERSION=$1
+final_path=$2
+
+echo "Comaring Gogs version v$CURRENT_VERSION with new version v$VERSION"
+if [[ "$CURRENT_VERSION" == "$VERSION" ]]
+then
+  echo "Already on latest version. Done."
+  exit 0
+fi
+
+echo "Upgrading Gogs to version v$VERSION"
+
+# current state in order to restore afterwards
+base_directory=$PWD
+base_gopath=$GOPATH
+
+# defining and making directories
+export GOPATH=/tmp/go
+mkdir -p $GOPATH $GOPATH/src $final_path
+
+echo "Downloading source archive..."
+curl -sL $TARBALL | tar xz -C $GOPATH/src
+
+cd $GOPATH/src/gogs-$VERSION
+echo "Downloading dependencies..."
+go get
+echo "Building and installing Gogs..."
+go build -o $final_path/gogs
+
+echo "Cleaning up..."
+rm -Rf $GOPATH
+
+export GOPATH=$base_gopath
+cd base_directory
