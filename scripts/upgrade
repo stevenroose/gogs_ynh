@@ -30,17 +30,10 @@ go version | grep 1.5 || {
 # Stop service
 sudo service gogs stop
 
-final_path=/opt/$app
-
 # Build Gogs
-sudo rm -rf "$final_path"_src
-base_directory=$PWD
-export GOPATH="$final_path"_src
-tar xzf ../sources/gogs_src.tar.gz
-sudo mv gogs_src $GOPATH
-cd $GOPATH/src/github.com/gogits/gogs
-go build
-cd $base_directory
+final_path=/opt/$app
+do_install $(yunohost app setting $app version) $final_path
+yunohost app setting $app version -v $(cat ../conf/VERSION)
 
 # Create a link to static files
 sudo rm -rf $final_path/log

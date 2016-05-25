@@ -50,16 +50,10 @@ sudo apt-get update
 sudo addgroup gogs --system --quiet
 sudo adduser gogs --disabled-login --ingroup gogs --system --quiet --shell /bin/bash
 
-# Build Gogs
-base_directory=$PWD
+# install Gogs
 final_path=/opt/$app
-export GOPATH="$final_path"_src
-tar xzf ../sources/gogs_src.tar.gz
-sudo mv gogs_src $GOPATH
-cd $GOPATH/src/github.com/gogits/gogs
-go build
-cd $base_directory
-sudo ln -s "$final_path"_src/src/github.com/gogits/gogs $final_path
+do_install 0 $final_path
+yunohost app setting $app version -v $(cat ../conf/VERSION)
 
 # repository path
 repo_path=/home/yunohost.app/$app
@@ -87,13 +81,13 @@ sudo systemctl daemon-reload
 sudo systemctl enable gogs.service
 
 # Set gogs user for gogs directory
-sudo chown gogs:gogs -R  "$final_path"_src
 sudo chown gogs:gogs -R $final_path
 sudo chown -hR gogs:gogs $repo_path
 sudo chown -R gogs:gogs /var/log/gogs
 sudo chown -R gogs:gogs /home/gogs
 
 # Copy and edit app.ini
+mkdir -p $final_path/custom/conf
 sudo cp ../conf/app.ini $final_path/custom/conf
 sudo sed -i "s@yuno_repo@$repo_path@g" $final_path/custom/conf/app.ini
 if [ "$path" = "/" ]
@@ -137,4 +131,3 @@ sudo yunohost app ssowatconf
 sudo service nginx reload
 
 sudo service gogs restart
-
