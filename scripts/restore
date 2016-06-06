@@ -10,7 +10,7 @@ APP=$2
 
 domain=$(sudo yunohost app setting ${APP} domain)
 path=$(sudo yunohost app setting ${APP} path)
-datapath=$(sudo yunohost app setting ${APP} datapath)
+data_path=$(sudo yunohost app setting ${APP} datapath)
 db_pwd=$(sudo yunohost app setting ${APP} mysqlpwd)
 adminusername=$(sudo yunohost app setting ${APP} adminusername)
 

@@ -21,7 +21,7 @@ sudo cp -a /etc/systemd/system/gogs.service "${BACKUP_DIR}/conf/gogs.service"
 
 # Backup data
 sudo mkdir -p "${BACKUP_DIR}/data"
-sudo cp -a $data/. "${BACKUP_DIR}/data"
+sudo cp -a $data_path/. "${BACKUP_DIR}/data"
 
 # Backup gogs home
 sudo mkdir -p "${BACKUP_DIR}/home"
