@@ -8,8 +8,8 @@ root_pwd=$(sudo cat /etc/yunohost/mysql)
 sudo service gogs stop
 
 # Remove data
-repo_path=$(sudo yunohost app setting $app repopath)
-sudo rm -rf $repo_path
+data_path=$(sudo yunohost app setting $app datapath)
+sudo rm -rf $data_path
 
 # Remove init script
 sudo systemctl disable gogs.service
@@ -19,21 +19,17 @@ sudo systemctl daemon-reload
 # Remove app
 final_path=/opt/$app
 sudo rm -rf $final_path
-sudo rm -rf "$final_path"_src
 sudo rm -rf /etc/logrotate.d/gogs
 sudo service rsyslog restart
 sudo rm -rf /var/log/gogs
 sudo userdel gogs
 sudo rm -rf /home/gogs
 
-# Remove home directory
-sudo rm -rf /home/yunohost.app/gogs
-
 # Remove database
 mysql -u root -p$root_pwd -e "DROP DATABASE $app ; DROP USER $app@localhost ;"
 
 # Remove monitor
-sudo yunohost service remove gogs 
+sudo yunohost service remove gogs
 
 # Remove configuration files
 sudo rm -f /etc/nginx/conf.d/$domain.d/$app.conf
